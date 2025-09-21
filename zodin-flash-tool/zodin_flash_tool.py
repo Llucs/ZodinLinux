@@ -30,13 +30,15 @@ try:
                                 QGroupBox, QCheckBox, QSpinBox, QComboBox, QFrame,
                                 QSplitter, QListWidget, QListWidgetItem, QGridLayout,
                                 QScrollArea, QSizePolicy, QDialog, QProgressDialog,
-                                QLineEdit)
+                                QLineEdit, QGraphicsDropShadowEffect)
+    from PyQt6.QtGui import QColor
+
     from PyQt6.QtCore import (Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, 
                              QEasingCurve, QRect, QParallelAnimationGroup, 
-                             QSequentialAnimationGroup, QAbstractAnimation)
-    from PyQt6.QtGui import (QFont, QPixmap, QIcon, QPalette, QColor, QLinearGradient,
-                            QPainter, QPen, QBrush, QRadialGradient)
-    from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+                             QSequentialAnimationGroup, QAbstractAnimation, QTranslator, QLocale)
+
+
+
 except ImportError as e:
     print(f"❌ Erro ao importar PyQt6: {e}")
     print("💡 Instale com: pip install PyQt6")
@@ -75,7 +77,7 @@ class AnimatedButton(QPushButton):
             self.setStyleSheet("""
                 QPushButton {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #ff6b6b, stop:1 #ee5a52);
+                        stop:0.0 #ff6b6b, stop:1 #ee5a52);
                     color: white;
                     border: none;
                     border-radius: 12px;
@@ -86,11 +88,11 @@ class AnimatedButton(QPushButton):
                 }
                 QPushButton:hover {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #ff7979, stop:1 #fd6c6c);
+                        stop:0.0 #ff7979, stop:1 #fd6c6c);
                 }
                 QPushButton:pressed {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #e55656, stop:1 #d63447);
+                        stop:0.0 #e55656, stop:1 #d63447);
                 }
                 QPushButton:disabled {
                     background: #bdc3c7;
@@ -101,7 +103,7 @@ class AnimatedButton(QPushButton):
             self.setStyleSheet("""
                 QPushButton {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #00b894, stop:1 #00a085);
+                        stop:0.0 #00b894, stop:1 #00a085);
                     color: white;
                     border: none;
                     border-radius: 12px;
@@ -112,18 +114,18 @@ class AnimatedButton(QPushButton):
                 }
                 QPushButton:hover {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #00cec9, stop:1 #00b894);
+                        stop:0.0 #00cec9, stop:1 #00b894);
                 }
                 QPushButton:pressed {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #00a085, stop:1 #008f7a);
+                        stop:0.0 #00a085, stop:1 #008f7a);
                 }
             """)
         elif self.primary:
             self.setStyleSheet("""
                 QPushButton {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #6c5ce7, stop:1 #5f3dc4);
+                        stop:0.0 #6c5ce7, stop:1 #5f3dc4);
                     color: white;
                     border: none;
                     border-radius: 12px;
@@ -134,11 +136,11 @@ class AnimatedButton(QPushButton):
                 }
                 QPushButton:hover {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #7d6ef0, stop:1 #6c5ce7);
+                        stop:0.0 #7d6ef0, stop:1 #6c5ce7);
                 }
                 QPushButton:pressed {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #5f3dc4, stop:1 #4c3baf);
+                        stop:0.0 #5f3dc4, stop:1 #4c3baf);
                 }
                 QPushButton:disabled {
                     background: #bdc3c7;
@@ -149,7 +151,7 @@ class AnimatedButton(QPushButton):
             self.setStyleSheet("""
                 QPushButton {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #ffffff, stop:1 #f8f9fa);
+                        stop:0.0 #ffffff, stop:1 #f8f9fa);
                     color: #2d3436;
                     border: 2px solid #ddd;
                     border-radius: 12px;
@@ -160,12 +162,12 @@ class AnimatedButton(QPushButton):
                 }
                 QPushButton:hover {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #f8f9fa, stop:1 #e9ecef);
+                        stop:0.0 #f8f9fa, stop:1 #e9ecef);
                     border-color: #6c5ce7;
                 }
                 QPushButton:pressed {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #e9ecef, stop:1 #dee2e6);
+                        stop:0.0 #e9ecef, stop:1 #dee2e6);
                 }
             """)
     
@@ -231,7 +233,7 @@ class AnimatedProgressBar(QProgressBar):
             }
             QProgressBar::chunk {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #6c5ce7, stop:0.5 #a29bfe, stop:1 #fd79a8);
+                    stop:0.0 #6c5ce7, stop:0.5 #a29bfe, stop:1 #fd79a8);
                 border-radius: 13px;
                 margin: 2px;
             }
@@ -346,6 +348,11 @@ class ZodinFlashTool(QMainWindow):
         self.flash_thread = None
         self.connected_devices = []
         self.current_device = None
+
+        # Inicializa o tradutor
+        self.translator = QTranslator()
+        self.current_language = QLocale().name().split("_")[0] # Detecta o idioma do sistema
+        self.switch_language(self.current_language)
         
         # Inicializa engine própria
         self.flash_engine = ZodinFlashEngine(
@@ -370,8 +377,8 @@ class ZodinFlashTool(QMainWindow):
     def init_ui(self):
         """Inicializa a interface do usuário"""
         self.setWindowTitle("Zodin Flash Tool v1.0.0 - The Ultimate Samsung Flash Tool")
-        self.setGeometry(100, 100, 1600, 1000)
-        self.setMinimumSize(1400, 900)
+        self.resize(1600, 1000) # Tamanho inicial da janela
+        self.setMinimumSize(1200, 800) # Tamanho mínimo para responsividade
         
         # Widget central
         central_widget = QWidget()
@@ -398,7 +405,40 @@ class ZodinFlashTool(QMainWindow):
         splitter.setSizes([500, 1100])
         
         # Aplica estilo moderno
-        self.apply_modern_style()
+        self.apply_modern_style(dark_mode=False)
+
+        # Adiciona um menu para alternar o modo escuro
+        menu_bar = self.menuBar()
+        view_menu = menu_bar.addMenu("Visualização")
+        dark_mode_action = view_menu.addAction("Modo Escuro")
+        dark_mode_action.setCheckable(True)
+        dark_mode_action.toggled.connect(self.toggle_dark_mode)
+
+        # Adiciona um menu para trocar o idioma
+        lang_menu = menu_bar.addMenu("Idioma")
+        en_action = lang_menu.addAction("English")
+        en_action.triggered.connect(lambda: self.switch_language("en"))
+        pt_action = lang_menu.addAction("Português")
+        pt_action.triggered.connect(lambda: self.switch_language("pt"))
+
+    def toggle_dark_mode(self, checked):
+        self.apply_modern_style(dark_mode=checked)
+
+    def switch_language(self, lang_code):
+        if lang_code == "en":
+            self.translator.load("en", ".")
+        elif lang_code == "pt":
+            self.translator.load("pt", ".")
+        QApplication.instance().installTranslator(self.translator)
+        self.retranslateUi()
+
+    def retranslateUi(self):
+        # TODO: Implementar a re-tradução de todos os elementos da UI
+        self.setWindowTitle(self.tr("Zodin Flash Tool - The Ultimate Samsung Flash Tool"))
+        # Exemplo: self.device_status.setText(self.tr("Searching for devices..."))
+        # Isso precisará ser feito para todos os textos visíveis na UI
+
+
     
     def create_left_panel(self):
         """Cria o painel esquerdo com design moderno"""
@@ -411,7 +451,7 @@ class ZodinFlashTool(QMainWindow):
         header_frame.setStyleSheet("""
             QFrame {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #667eea, stop:1 #764ba2);
+                    stop:0.0 #667eea, stop:1 #764ba2);
                 border-radius: 20px;
                 margin-bottom: 15px;
             }
@@ -466,14 +506,13 @@ class ZodinFlashTool(QMainWindow):
         self.device_status = QLabel("🔍 Procurando dispositivos...")
         self.device_status.setStyleSheet("""
             QLabel {
-                padding: 20px;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffeaa7, stop:1 #fdcb6e);
-                border: none;
-                border-radius: 12px;
-                font-size: 15px;
+                padding: 15px;
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 10px;
+                font-size: 14px;
                 font-weight: bold;
-                color: #2d3436;
+                color: #333;
             }
         """)
         device_layout.addWidget(self.device_status)
@@ -483,20 +522,19 @@ class ZodinFlashTool(QMainWindow):
         self.devices_list.setMaximumHeight(120)
         self.devices_list.setStyleSheet("""
             QListWidget {
-                border: 2px solid #ddd;
-                border-radius: 10px;
-                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                background-color: #ffffff;
                 font-size: 13px;
                 padding: 5px;
             }
             QListWidget::item {
                 padding: 8px;
-                border-radius: 5px;
+                border-radius: 4px;
                 margin: 2px;
             }
             QListWidget::item:selected {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #6c5ce7, stop:1 #5f3dc4);
+                background-color: #6c5ce7;
                 color: white;
             }
         """)
@@ -539,7 +577,7 @@ class ZodinFlashTool(QMainWindow):
         self.log_text.setStyleSheet("""
             QTextEdit {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #2d3436, stop:1 #636e72);
+                    stop:0.0 #2d3436, stop:1 #636e72);
                 color: #00ff88;
                 border: none;
                 border-radius: 12px;
@@ -578,7 +616,7 @@ class ZodinFlashTool(QMainWindow):
             }
             QTabBar::tab {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #f8f9fa, stop:1 #e9ecef);
+                    stop:0.0 #f8f9fa, stop:1 #e9ecef);
                 border: 2px solid #ddd;
                 padding: 15px 25px;
                 margin-right: 3px;
@@ -590,13 +628,13 @@ class ZodinFlashTool(QMainWindow):
             }
             QTabBar::tab:selected {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #6c5ce7, stop:1 #5f3dc4);
+                    stop:0.0 #6c5ce7, stop:1 #5f3dc4);
                 color: white;
                 border-bottom-color: #6c5ce7;
             }
             QTabBar::tab:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #a29bfe, stop:1 #6c5ce7);
+                    stop:0.0 #a29bfe, stop:1 #6c5ce7);
                 color: white;
             }
         """)
@@ -709,7 +747,7 @@ class ZodinFlashTool(QMainWindow):
             QFrame:hover {
                 border-color: #6c5ce7;
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffffff, stop:1 #f8f9ff);
+                    stop:0.0 #ffffff, stop:1 #f8f9ff);
             }
         """)
         
@@ -729,7 +767,7 @@ class ZodinFlashTool(QMainWindow):
             }
             QCheckBox::indicator:checked {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #6c5ce7, stop:1 #5f3dc4);
+                    stop:0.0 #6c5ce7, stop:1 #5f3dc4);
                 border-color: #6c5ce7;
             }
         """)
@@ -1182,7 +1220,7 @@ class ZodinFlashTool(QMainWindow):
         title_frame.setStyleSheet("""
             QFrame {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #667eea, stop:0.5 #764ba2, stop:1 #f093fb);
+                    stop:0.0 #667eea, stop:0.5 #764ba2, stop:1 #f093fb);
                 border-radius: 20px;
                 margin: 20px;
             }
@@ -1264,38 +1302,181 @@ class ZodinFlashTool(QMainWindow):
         about_layout.addStretch()
         
         return about_widget
-    
-    def apply_modern_style(self):
-        """Aplica estilo moderno à aplicação"""
-        self.setStyleSheet("""
-            QMainWindow {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #f8f9fa, stop:1 #e9ecef);
-            }
-            QGroupBox {
-                font-weight: bold;
-                border: 3px solid #e9ecef;
-                border-radius: 15px;
-                margin-top: 20px;
-                padding-top: 20px;
-                background-color: white;
-                font-size: 16px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 20px;
-                padding: 0 10px 0 10px;
-                color: #2d3436;
-                font-size: 16px;
-                font-weight: bold;
-            }
-            QCheckBox {
-                font-size: 14px;
-                color: #2d3436;
-                spacing: 10px;
-                font-weight: 500;
-            }
-        """)
+
+    def apply_modern_style(self, dark_mode=False):
+        """Aplica um estilo moderno e limpo à aplicação"""
+        if dark_mode:
+            self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #2c3e50; /* Dark Blue-Grey */
+                    color: #ecf0f1; /* Light Grey */
+                }
+                QTabWidget::pane {
+                    border: none;
+                    border-top: 3px solid #3498db; /* Blue */
+                }
+                QTabBar::tab {
+                    background: #34495e; /* Darker Blue-Grey */
+                    color: #ecf0f1;
+                    padding: 15px 30px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    border-top-left-radius: 10px;
+                    border-top-right-radius: 10px;
+                    min-width: 150px;
+                }
+                QTabBar::tab:selected {
+                    background: #3498db;
+                    color: white;
+                }
+                QTabBar::tab:hover {
+                    background: #2980b9; /* Slightly darker blue */
+                }
+                QGroupBox {
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #ecf0f1;
+                    border: 2px solid #34495e;
+                    border-radius: 15px;
+                    margin-top: 10px;
+                    padding: 20px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    subcontrol-position: top left;
+                    padding: 0 10px;
+                    background-color: #2c3e50;
+                }
+                QLabel {
+                    font-size: 14px;
+                    color: #ecf0f1;
+                }
+                QTextEdit {
+                    background-color: #34495e;
+                    border: 2px solid #2980b9;
+                    border-radius: 10px;
+                    padding: 10px;
+                    font-family: 'monospace';
+                    font-size: 13px;
+                    color: #ecf0f1;
+                }
+                QListWidget {
+                    background-color: #34495e;
+                    border: 2px solid #2980b9;
+                    border-radius: 10px;
+                    padding: 10px;
+                }
+                QListWidget::item {
+                    padding: 12px;
+                    border-bottom: 1px solid #2c3e50;
+                }
+                QListWidget::item:selected {
+                    background-color: #3498db;
+                    color: white;
+                    border-radius: 8px;
+                }
+                QCheckBox {
+                    spacing: 10px;
+                    font-size: 14px;
+                    color: #ecf0f1;
+                }
+                QCheckBox::indicator {
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid #3498db;
+                    border-radius: 10px;
+                    background-color: #2c3e50;
+                }
+                QCheckBox::indicator:checked {
+                    background-color: #3498db;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #ecf0f1; /* Light Grey Background */
+                    color: #2c3e50; /* Dark Blue-Grey */
+                }
+                QTabWidget::pane {
+                    border: none;
+                    border-top: 3px solid #3498db; /* Blue */
+                }
+                QTabBar::tab {
+                    background: #bdc3c7; /* Medium Grey */
+                    color: #2c3e50;
+                    padding: 15px 30px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    border-top-left-radius: 10px;
+                    border-top-right-radius: 10px;
+                    min-width: 150px;
+                }
+                QTabBar::tab:selected {
+                    background: #3498db;
+                    color: white;
+                }
+                QTabBar::tab:hover {
+                    background: #aeb6bf; /* Slightly darker grey */
+                }
+                QGroupBox {
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #2c3e50;
+                    border: 2px solid #bdc3c7;
+                    border-radius: 15px;
+                    margin-top: 10px;
+                    padding: 20px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    subcontrol-position: top left;
+                    padding: 0 10px;
+                    background-color: #ecf0f1;
+                }
+                QLabel {
+                    font-size: 14px;
+                    color: #2c3e50;
+                }
+                QTextEdit {
+                    background-color: #ffffff;
+                    border: 2px solid #bdc3c7;
+                    border-radius: 10px;
+                    padding: 10px;
+                    font-family: 'monospace';
+                    font-size: 13px;
+                    color: #2c3e50;
+                }
+                QListWidget {
+                    background-color: #ffffff;
+                    border: 2px solid #bdc3c7;
+                    border-radius: 10px;
+                    padding: 10px;
+                }
+                QListWidget::item {
+                    padding: 12px;
+                    border-bottom: 1px solid #ecf0f1;
+                }
+                QListWidget::item:selected {
+                    background-color: #3498db;
+                    color: white;
+                    border-radius: 8px;
+                }
+                QCheckBox {
+                    spacing: 10px;
+                    font-size: 14px;
+                    color: #2c3e50;
+                }
+                QCheckBox::indicator {
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid #3498db;
+                    border-radius: 10px;
+                    background-color: #ffffff;
+                }
+                QCheckBox::indicator:checked {
+                    background-color: #3498db;
+                }
+            """)
     
     def setup_device_detection(self):
         """Configura a detecção de dispositivos"""
@@ -1324,7 +1505,7 @@ class ZodinFlashTool(QMainWindow):
                 QLabel {
                     padding: 20px;
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #00b894, stop:1 #00a085);
+                        stop:0.0 #00b894, stop:1 #00a085);
                     border: none;
                     border-radius: 12px;
                     font-size: 15px;
@@ -1333,25 +1514,28 @@ class ZodinFlashTool(QMainWindow):
                 }
             """)
             self.start_button.setEnabled(True)
-            
-            # Adiciona dispositivos à lista
+
             for device in devices:
-                item_text = f"📱 {device.model or 'Samsung Device'} - {device.mode.value}"
+                if device.mode == SamsungMode.ADB:
+                    item_text = f"📱 {device.model or 'Dispositivo Android'} ({device.serial_number}) - ADB"
+                else:
+                    item_text = f"📱 {device.model or 'Samsung Device'} ({device.serial_number}) - {device.mode.value.capitalize()}"
                 item = QListWidgetItem(item_text)
                 self.devices_list.addItem(item)
-            
+
             # Conecta ao primeiro dispositivo
             if devices and not self.current_device:
                 self.current_device = devices[0]
-                self.flash_engine.connect_device(self.current_device)
-                self.log(f"🔗 Conectado ao dispositivo: {self.current_device.model or 'Samsung Device'}")
+                if self.current_device.mode != SamsungMode.ADB:
+                    self.flash_engine.connect_device(self.current_device)
+                self.log(f"🔗 Conectado ao dispositivo: {self.current_device.model or 'Samsung Device'} ({self.current_device.mode.value.capitalize()})")
         else:
             self.device_status.setText("🔍 Procurando dispositivos Samsung...")
             self.device_status.setStyleSheet("""
                 QLabel {
                     padding: 20px;
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                        stop:0 #ffeaa7, stop:1 #fdcb6e);
+                        stop:0.0 #ffeaa7, stop:1 #fdcb6e);
                     border: none;
                     border-radius: 12px;
                     font-size: 15px;

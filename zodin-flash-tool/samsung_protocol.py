@@ -12,6 +12,7 @@ import hashlib
 import os
 import tarfile
 import tempfile
+import subprocess
 from typing import Optional, List, Dict, Tuple, Callable
 from dataclasses import dataclass
 from enum import Enum
@@ -24,6 +25,7 @@ class SamsungMode(Enum):
     DOWNLOAD = "download"
     RECOVERY = "recovery"
     FASTBOOT = "fastboot"
+    ADB = "adb"
 
 
 class PacketType(Enum):
@@ -124,11 +126,53 @@ class SamsungProtocol:
         except Exception as e:
             self.log(f"Erro na detecção de dispositivos: {str(e)}")
         
+        devices.extend(self._detect_adb_devices())
         return devices
     
-    def connect_device(self, device: SamsungDevice) -> bool:
+    def _detect_adb_devices(self) -> List[SamsungDevice]:
+        """Detecta dispositivos ADB conectados"""
+        adb_devices = []
+        try:
+            result = subprocess.run(["adb", "devices"], capture_output=True, text=True, check=True, timeout=5)
+            lines = result.stdout.strip().split('\n')
+            for line in lines[1:]:
+                if "device" in line and "sideload" not in line and "recovery" not in line:
+                    parts = line.split('\t')
+                    if len(parts) >= 2:
+                        serial = parts[0]
+                        state = parts[1]
+                        
+                        # Tenta obter mais informações via adb shell
+                        model = ""
+                        try:
+                            model_result = subprocess.run(["adb", "-s", serial, "shell", "getprop", "ro.product.model"], capture_output=True, text=True, check=True, timeout=2)
+                            model = model_result.stdout.strip()
+                        except:
+                            pass
+
+                        adb_dev = SamsungDevice(
+                            serial_number=serial,
+                            model=model,
+                            mode=SamsungMode.ADB
+                        )
+                        adb_devices.append(adb_dev)
+        except FileNotFoundError:
+            self.log("ADB não encontrado. Certifique-se de que está instalado e no PATH.")
+        except subprocess.TimeoutExpired:
+            self.log("Comando ADB excedeu o tempo limite.")
+        except Exception as e:
+            self.log(f"Erro na detecção de dispositivos ADB: {str(e)}")
+        return adb_devices
+
+    def connect_device(self, device: SamsungDevice) -> bool: 
         """Conecta ao dispositivo Samsung"""
         try:
+            if device.mode == SamsungMode.ADB:
+                self.log(f"Dispositivo ADB {device.serial_number} detectado.")
+                self.device = None # Não há objeto pyusb para ADB
+                self.session_active = True # Considera a sessão ativa para ADB
+                return True
+
             # Encontra o dispositivo USB
             self.device = usb.core.find(
                 idVendor=device.vendor_id,
@@ -136,7 +180,7 @@ class SamsungProtocol:
             )
             
             if self.device is None:
-                self.log("Dispositivo não encontrado")
+                self.log("Dispositivo não encontrado no modo USB.")
                 return False
             
             # Configura o dispositivo
@@ -368,11 +412,11 @@ class SamsungProtocol:
     def disconnect(self):
         """Desconecta do dispositivo"""
         try:
-            if self.session_active:
+            if self.session_active and self.device and self.device.mode != SamsungMode.ADB:
                 self.send_packet(PacketType.END_SESSION)
                 self.session_active = False
             
-            if self.device:
+            if self.device and self.device.mode != SamsungMode.ADB:
                 usb.util.dispose_resources(self.device)
                 self.device = None
             
