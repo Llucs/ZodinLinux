@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Zodin Flash Tool - Installation Script
-# Version: 1.0.0
+# Version: 1.1.1
 # The Ultimate Samsung Flash Tool for Linux
 
 set -e
@@ -27,7 +27,7 @@ print_logo() {
     echo "║    ███████╗╚██████╔╝██████╔╝██║██║ ╚████║                   ║"
     echo "║    ╚══════╝ ╚═════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝                   ║"
     echo "║                                                              ║"
-    echo "║              FLASH TOOL v1.0.0                              ║"
+    echo "║              FLASH TOOL v1.1.1                              ║"
     echo "║        The Ultimate Samsung Flash Tool for Linux            ║"
     echo "║                                                              ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
@@ -70,6 +70,26 @@ detect_distro() {
         . /etc/os-release
         DISTRO=$ID
         VERSION=$VERSION_ID
+        
+        # Handle distributions based on others
+        case $ID in
+            zorin)
+                # Zorin OS is based on Ubuntu
+                DISTRO="ubuntu"
+                ;;
+            pop)
+                # Pop!_OS is based on Ubuntu
+                DISTRO="ubuntu"
+                ;;
+            linuxmint)
+                # Linux Mint is based on Ubuntu
+                DISTRO="ubuntu"
+                ;;
+            elementary)
+                # Elementary OS is based on Ubuntu
+                DISTRO="ubuntu"
+                ;;
+        esac
     else
         print_error "Cannot detect Linux distribution"
         exit 1
@@ -134,8 +154,8 @@ install_python_deps() {
     # Upgrade pip
     pip install --upgrade pip
     
-    # Install required packages
-    pip install PyQt6 requests beautifulsoup4 lxml
+    # Install required packages (including pyusb that was missing!)
+    pip install PyQt6 pyusb requests beautifulsoup4 lxml
     
     print_success "Python dependencies installed in virtual environment"
 }
@@ -204,16 +224,43 @@ install_zodin() {
     # Create directories
     mkdir -p "$APP_DIR" "$BIN_DIR" "$DESKTOP_DIR" "$ICON_DIR"
     
-    # Copy application files
+    # Copy ALL application files (this was the main problem!)
+    print_info "Copying application files..."
     cp zodin_flash_tool.py "$APP_DIR/"
+    cp samsung_protocol.py "$APP_DIR/"
+    cp updater.py "$APP_DIR/"
     cp flash_engines.py "$APP_DIR/"
+    cp requirements.txt "$APP_DIR/"
     
-    # Create launcher script
+    # Copy tools directory if it exists
+    if [ -d "tools" ]; then
+        cp -r tools "$APP_DIR/"
+    fi
+    
+    # Create launcher script with proper error handling
     cat > "$BIN_DIR/zodin-flash-tool" << EOF
 #!/bin/bash
-# Zodin Flash Tool Launcher
+# Zodin Flash Tool Launcher v1.1.1
+
+# Check if virtual environment exists
+if [ ! -d "\$HOME/.zodin-venv" ]; then
+    echo "❌ Virtual environment not found. Please reinstall Zodin Flash Tool."
+    exit 1
+fi
+
+# Activate virtual environment
+source "\$HOME/.zodin-venv/bin/activate"
+
+# Change to application directory
 cd "$APP_DIR"
-source ~/.zodin-venv/bin/activate
+
+# Check if main script exists
+if [ ! -f "zodin_flash_tool.py" ]; then
+    echo "❌ Zodin Flash Tool not found. Please reinstall."
+    exit 1
+fi
+
+# Run the application
 python3 zodin_flash_tool.py "\$@"
 EOF
     chmod +x "$BIN_DIR/zodin-flash-tool"
@@ -242,6 +289,7 @@ EOF
 EOF
     
     print_success "Zodin Flash Tool installed successfully!"
+    print_info "All modules copied: zodin_flash_tool.py, samsung_protocol.py, updater.py, flash_engines.py"
 }
 
 # Add to PATH
@@ -300,7 +348,7 @@ EOF
 # Print final instructions
 print_final_instructions() {
     echo
-    print_success "🎉 Zodin Flash Tool v1.0.0 installation completed!"
+    print_success "🎉 Zodin Flash Tool v1.1.1 installation completed!"
     echo
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║                     INSTALLATION COMPLETE                   ║${NC}"
