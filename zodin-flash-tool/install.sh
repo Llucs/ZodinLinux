@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Zodin Flash Tool - Installation Script
-# Version: 1.1.1
+# Version: 1.1.4
 # The Ultimate Samsung Flash Tool for Linux
 
 set -e
@@ -27,7 +27,7 @@ print_logo() {
     echo "║    ███████╗╚██████╔╝██████╔╝██║██║ ╚████║                   ║"
     echo "║    ╚══════╝ ╚═════╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝                   ║"
     echo "║                                                              ║"
-    echo "║              FLASH TOOL v1.1.1                              ║"
+    echo "║              FLASH TOOL v1.1.4                              ║"
     echo "║        The Ultimate Samsung Flash Tool for Linux            ║"
     echo "║                                                              ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
@@ -109,7 +109,7 @@ install_dependencies() {
             sudo apt install -y python3 python3-pip python3-venv python3-dev \
                                libusb-1.0-0-dev libudev-dev pkg-config \
                                heimdall-flash lz4 usbutils git curl wget \
-                               build-essential
+                               build-essential libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-shm0 libxcb-sync1 libxcb-xfixes0 libxcb-xkb1 libxkbcommon-x11-0 libxcb-cursor0
             ;;
         fedora|centos|rhel)
             print_info "Installing dependencies for Red Hat based system..."
@@ -357,7 +357,7 @@ EOF
 # Print final instructions
 print_final_instructions() {
     echo
-    print_success "🎉 Zodin Flash Tool v1.1.1 installation completed!"
+    print_success "🎉 Zodin Flash Tool v1.1.4 installation completed!"
     echo
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║                     INSTALLATION COMPLETE                   ║${NC}"
