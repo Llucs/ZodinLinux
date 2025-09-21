@@ -237,31 +237,40 @@ install_zodin() {
         cp -r tools "$APP_DIR/"
     fi
     
-    # Create launcher script with proper error handling
+    # Create launcher script with proper error handling for sudo and venv
     cat > "$BIN_DIR/zodin-flash-tool" << EOF
 #!/bin/bash
-# Zodin Flash Tool Launcher v1.1.1
+# Zodin Flash Tool Launcher v1.1.2
+
+APP_DIR="$APP_DIR"
+VENV_DIR="$HOME/.zodin-venv"
+PYTHON_EXEC="\$VENV_DIR/bin/python3"
+MAIN_SCRIPT="\$APP_DIR/zodin_flash_tool.py"
 
 # Check if virtual environment exists
-if [ ! -d "\$HOME/.zodin-venv" ]; then
-    echo "❌ Virtual environment not found. Please reinstall Zodin Flash Tool."
+if [ ! -d "\$VENV_DIR" ]; then
+    echo "❌ Ambiente virtual não encontrado. Por favor, reinstale o Zodin Flash Tool."
     exit 1
 fi
-
-# Activate virtual environment
-source "\$HOME/.zodin-venv/bin/activate"
-
-# Change to application directory
-cd "$APP_DIR"
 
 # Check if main script exists
-if [ ! -f "zodin_flash_tool.py" ]; then
-    echo "❌ Zodin Flash Tool not found. Please reinstall."
+if [ ! -f "\$MAIN_SCRIPT" ]; then
+    echo "❌ Zodin Flash Tool não encontrado. Por favor, reinstale."
     exit 1
 fi
 
-# Run the application
-python3 zodin_flash_tool.py "\$@"
+# If running with sudo, ensure the correct python from venv is used
+if [ "\$(id -u)" -eq 0 ]; then
+    # Running as root, use the python from the user's venv
+    # This requires the user's HOME directory to be correctly set
+    # and the venv to be accessible by root (which it is by default)
+    echo "⚠️  Executando como root. Usando ambiente virtual do usuário: \$VENV_DIR"
+    exec sudo -E \$PYTHON_EXEC \$MAIN_SCRIPT "\$@"
+else
+    # Running as normal user, activate venv and run
+    source "\$VENV_DIR/bin/activate"
+    exec \$PYTHON_EXEC \$MAIN_SCRIPT "\$@"
+fi
 EOF
     chmod +x "$BIN_DIR/zodin-flash-tool"
     
@@ -363,9 +372,9 @@ print_final_instructions() {
     echo -e "  ${GREEN}•${NC} Uninstall: ${YELLOW}zodin-uninstall${NC}"
     echo
     print_warning "Important notes:"
-    echo -e "  ${RED}•${NC} You may need to run with sudo for USB device access"
-    echo -e "  ${RED}•${NC} Restart your terminal or run 'source ~/.bashrc' to use command line"
-    echo -e "  ${RED}•${NC} Log out and log back in for USB permissions to take effect"
+    echo -e "  ${RED}•${NC} Para acesso USB, execute: ${YELLOW}sudo zodin-flash-tool${NC}"
+    echo -e "  ${RED}•${NC} Reinicie seu terminal ou execute \'source ~/.bashrc\' para usar o comando na linha"
+    echo -e "  ${RED}•${NC} Faça logout e login novamente para que as permissões USB tenham efeito"
     echo
     print_info "For support and updates, visit: https://github.com/Llucs/ZodinLinux"
     echo
