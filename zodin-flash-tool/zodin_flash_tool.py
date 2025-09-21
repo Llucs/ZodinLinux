@@ -1,36 +1,62 @@
 #!/usr/bin/env python3
 """
-Zodin Flash Tool - The Ultimate Samsung Flash Tool for Linux
-Uma ferramenta revolucionária que combina o conhecimento das melhores ferramentas de flash Samsung
-Version: 1.0.0
+Zodin Flash Tool - A Ferramenta Definitiva de Flash Samsung para Linux
+Interface gráfica moderna e intuitiva para flash de dispositivos Samsung
 """
 
-import sys
 import os
+import sys
+import time
 import threading
-import tempfile
-import json
-import requests
-from datetime import datetime
+import argparse
 from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple, Any
 
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                            QHBoxLayout, QGridLayout, QLabel, QPushButton, 
-                            QLineEdit, QTextEdit, QProgressBar, QCheckBox, 
-                            QFileDialog, QMessageBox, QTabWidget, QListWidget,
-                            QGroupBox, QFrame, QSplitter, QComboBox, QSpinBox,
-                            QListWidgetItem, QScrollArea, QStackedWidget,
-                            QTableWidget, QTableWidgetItem, QHeaderView,
-                            QSlider, QDial, QGraphicsDropShadowEffect)
-from PyQt6.QtCore import (Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, 
-                         QEasingCurve, QRect, QParallelAnimationGroup, 
-                         QSequentialAnimationGroup, QAbstractAnimation)
-from PyQt6.QtGui import (QFont, QPixmap, QIcon, QPalette, QColor, QLinearGradient,
-                        QPainter, QPen, QBrush, QRadialGradient)
+# Adiciona o diretório atual ao path para importações locais
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
-from samsung_protocol import (ZodinFlashEngine, SamsungDevice, SamsungMode, 
-                             FlashProgress, FirmwareParser)
-from updater import ZodinUpdater
+# Configuração do ambiente Qt para suportar ambientes headless
+if 'DISPLAY' not in os.environ:
+    os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+else:
+    os.environ.setdefault('QT_QPA_PLATFORM', 'xcb')
+
+try:
+    from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+                                QHBoxLayout, QTabWidget, QLabel, QPushButton, 
+                                QProgressBar, QTextEdit, QFileDialog, QMessageBox,
+                                QGroupBox, QCheckBox, QSpinBox, QComboBox, QFrame,
+                                QSplitter, QListWidget, QListWidgetItem, QGridLayout,
+                                QScrollArea, QSizePolicy, QDialog, QProgressDialog,
+                                QLineEdit)
+    from PyQt6.QtCore import (Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, 
+                             QEasingCurve, QRect, QParallelAnimationGroup, 
+                             QSequentialAnimationGroup, QAbstractAnimation)
+    from PyQt6.QtGui import (QFont, QPixmap, QIcon, QPalette, QColor, QLinearGradient,
+                            QPainter, QPen, QBrush, QRadialGradient)
+    from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+except ImportError as e:
+    print(f"❌ Erro ao importar PyQt6: {e}")
+    print("💡 Instale com: pip install PyQt6")
+    sys.exit(1)
+
+try:
+    from samsung_protocol import (ZodinFlashEngine, SamsungDevice, SamsungMode, 
+                                 FlashProgress, FirmwareParser)
+except ImportError as e:
+    print(f"❌ Erro ao importar samsung_protocol: {e}")
+    print(f"📁 Diretório atual: {current_dir}")
+    print(f"🔍 Arquivos disponíveis: {os.listdir(current_dir)}")
+    sys.exit(1)
+
+try:
+    from updater import ZodinUpdater
+except ImportError as e:
+    print(f"❌ Erro ao importar updater: {e}")
+    print("⚠️ Sistema de atualização desabilitado")
+    ZodinUpdater = None
 
 
 class AnimatedButton(QPushButton):
@@ -61,7 +87,6 @@ class AnimatedButton(QPushButton):
                 QPushButton:hover {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                         stop:0 #ff7979, stop:1 #fd6c6c);
-                    transform: translateY(-2px);
                 }
                 QPushButton:pressed {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -329,14 +354,18 @@ class ZodinFlashTool(QMainWindow):
         )
         
         # Inicializa sistema de atualização
-        self.updater = ZodinUpdater(self, "1.0.0")
+        if ZodinUpdater:
+            self.updater = ZodinUpdater(self, "1.1.0")
+        else:
+            self.updater = None
         
         self.init_ui()
         self.setup_device_detection()
         self.setup_animations()
         
         # Verifica atualizações após 3 segundos (para não atrasar a inicialização)
-        QTimer.singleShot(3000, self.updater.check_for_updates)
+        if self.updater:
+            QTimer.singleShot(3000, self.updater.check_for_updates)
     
     def init_ui(self):
         """Inicializa a interface do usuário"""
@@ -1610,20 +1639,78 @@ class ZodinFlashTool(QMainWindow):
 
 
 def main():
-    """Função principal"""
+    """Função principal da aplicação"""
+    # Parse argumentos de linha de comando
+    parser = argparse.ArgumentParser(
+        description="Zodin Flash Tool - A Ferramenta Definitiva de Flash Samsung para Linux",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemplos de uso:
+  python3 zodin_flash_tool.py                    # Inicia interface gráfica
+  python3 zodin_flash_tool.py --help             # Mostra esta ajuda
+  python3 zodin_flash_tool.py --version          # Mostra versão
+  python3 zodin_flash_tool.py --check-devices    # Verifica dispositivos conectados
+  python3 zodin_flash_tool.py --headless         # Modo sem interface gráfica
+        """
+    )
+    
+    parser.add_argument('--version', action='version', version='Zodin Flash Tool v1.1.0')
+    parser.add_argument('--check-devices', action='store_true', 
+                       help='Verifica dispositivos Samsung conectados')
+    parser.add_argument('--headless', action='store_true',
+                       help='Executa em modo headless (sem interface gráfica)')
+    parser.add_argument('--debug', action='store_true',
+                       help='Ativa modo debug com logs detalhados')
+    
+    args = parser.parse_args()
+    
+    # Se argumentos específicos foram passados, executa e sai
+    if args.check_devices:
+        print("🔍 Verificando dispositivos Samsung conectados...")
+        try:
+            from samsung_protocol import ZodinFlashEngine
+            engine = ZodinFlashEngine()
+            devices = engine.detect_devices()
+            if devices:
+                print(f"✅ Encontrados {len(devices)} dispositivo(s):")
+                for i, device in enumerate(devices, 1):
+                    print(f"  {i}. {device}")
+            else:
+                print("❌ Nenhum dispositivo Samsung encontrado")
+        except Exception as e:
+            print(f"❌ Erro ao verificar dispositivos: {e}")
+        return
+    
+    if args.headless:
+        print("🖥️ Modo headless não implementado ainda")
+        print("💡 Use a interface gráfica: python3 zodin_flash_tool.py")
+        return
+    
+    # Verifica se não está em ambiente headless
+    if 'DISPLAY' not in os.environ and not args.headless:
+        print("❌ Ambiente sem display detectado")
+        print("💡 Use: python3 zodin_flash_tool.py --headless")
+        print("💡 Ou configure DISPLAY para usar interface gráfica")
+        return
+    
+    # Inicia aplicação Qt
     app = QApplication(sys.argv)
     app.setApplicationName("Zodin Flash Tool")
-    app.setApplicationVersion("1.0.0")
+    app.setApplicationVersion("1.1.0")
     app.setOrganizationName("Zodin Project")
     
     # Verifica dependências
     try:
         import usb.core
     except ImportError:
-        QMessageBox.critical(None, "Dependência Faltando", 
-                           "PyUSB não está instalado!\n\n"
-                           "Instale com: pip install pyusb\n"
-                           "Ou execute o script de instalação.")
+        if 'DISPLAY' in os.environ:
+            QMessageBox.critical(None, "Dependência Faltando", 
+                               "PyUSB não está instalado!\n\n"
+                               "Instale com: pip install pyusb\n"
+                               "Ou execute o script de instalação.")
+        else:
+            print("❌ PyUSB não está instalado!")
+            print("💡 Instale com: pip install pyusb")
         sys.exit(1)
     
     # Verifica privilégios
@@ -1632,16 +1719,23 @@ def main():
         print("   Pode ser necessário executar com sudo para acesso USB.")
         print("   Comando: sudo python3 zodin_flash_tool.py")
     
-    # Cria e exibe a janela principal
-    window = ZodinFlashTool()
-    window.show()
-    
-    # Log inicial
-    window.log("🚀 Zodin Flash Tool v1.0.0 iniciado")
-    window.log("✨ A ferramenta definitiva de flash Samsung para Linux")
-    window.log("🔧 Implementação própria dos protocolos Samsung")
-    
-    sys.exit(app.exec())
+    try:
+        # Cria e exibe a janela principal
+        window = ZodinFlashTool()
+        window.show()
+        
+        # Log inicial
+        window.log("🚀 Zodin Flash Tool v1.1.0 iniciado")
+        window.log("✨ A ferramenta definitiva de flash Samsung para Linux")
+        window.log("🔧 Implementação própria dos protocolos Samsung")
+        
+        sys.exit(app.exec())
+    except Exception as e:
+        print(f"❌ Erro ao iniciar aplicação: {e}")
+        if args.debug:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

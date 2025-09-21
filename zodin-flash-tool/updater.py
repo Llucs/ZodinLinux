@@ -19,8 +19,18 @@ from datetime import datetime, timedelta
 import threading
 import time
 
-from PyQt6.QtCore import QThread, pyqtSignal, QTimer
-from PyQt6.QtWidgets import QMessageBox, QProgressDialog, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit
+# Importações Qt condicionais
+try:
+    from PyQt6.QtCore import QThread, pyqtSignal, QTimer, Qt
+    from PyQt6.QtWidgets import QMessageBox, QProgressDialog, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit
+    QT_AVAILABLE = True
+except ImportError:
+    # Fallback para quando Qt não está disponível
+    QT_AVAILABLE = False
+    QThread = object
+    pyqtSignal = lambda *args: None
+    QTimer = None
+    Qt = None
 
 
 class UpdateInfo:
@@ -547,12 +557,14 @@ class ZodinUpdater:
     
     def _on_update_error(self, error_message: str):
         """Callback quando há erro na verificação"""
-        if self.parent:
+        if self.parent and QT_AVAILABLE:
             QMessageBox.warning(
                 self.parent,
                 "Erro na Verificação",
                 f"Não foi possível verificar atualizações:\n{error_message}"
             )
+        else:
+            print(f"❌ Erro na verificação de atualizações: {error_message}")
     
     def _start_update_process(self, update_info: UpdateInfo):
         """Inicia processo de atualização"""
@@ -564,7 +576,7 @@ class ZodinUpdater:
             self.parent
         )
         progress_dialog.setWindowTitle("Atualizando Zodin Flash Tool")
-        progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        progress_dialog.setWindowModality(Qt.WindowModal if QT_AVAILABLE else 0)
         progress_dialog.show()
         
         # Inicia download
@@ -585,27 +597,34 @@ class ZodinUpdater:
         progress_dialog.close()
         
         # Confirma instalação
-        reply = QMessageBox.question(
-            self.parent,
-            "Instalar Atualização",
-            "Download concluído!\n\n"
-            "Deseja instalar a atualização agora?\n"
-            "O Zodin Flash Tool será reiniciado após a instalação.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
-            self._install_update(file_path)
+        if QT_AVAILABLE:
+            reply = QMessageBox.question(
+                self.parent,
+                "Instalar Atualização",
+                "Download concluído!\n\n"
+                "Deseja instalar a atualização agora?\n"
+                "O Zodin Flash Tool será reiniciado após a instalação.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
+            )
+            
+            if reply == QMessageBox.StandardButton.Yes:
+                self._install_update(file_path)
+        else:
+            # Fallback para ambiente sem Qt
+            print("Download concluído! Instale manualmente ou use interface gráfica.")
     
     def _on_download_failed(self, error_message: str, progress_dialog: QProgressDialog):
         """Callback quando download falha"""
         progress_dialog.close()
-        QMessageBox.critical(
-            self.parent,
-            "Erro no Download",
-            f"Falha ao baixar atualização:\n{error_message}"
-        )
+        if QT_AVAILABLE:
+            QMessageBox.critical(
+                self.parent,
+                "Erro no Download",
+                f"Falha ao baixar atualização:\n{error_message}"
+            )
+        else:
+            print(f"❌ Falha ao baixar atualização: {error_message}")
     
     def _install_update(self, update_file: str):
         """Instala a atualização"""
@@ -613,28 +632,38 @@ class ZodinUpdater:
             success, message = self.installer.install_update(update_file)
             
             if success:
-                QMessageBox.information(
-                    self.parent,
-                    "Atualização Concluída",
-                    f"{message}\n\n"
-                    "O Zodin Flash Tool será reiniciado agora."
-                )
+                if QT_AVAILABLE:
+                    QMessageBox.information(
+                        self.parent,
+                        "Atualização Concluída",
+                        f"{message}\n\n"
+                        "O Zodin Flash Tool será reiniciado agora."
+                    )
+                else:
+                    print(f"✅ {message}")
+                    print("🔄 Reinicie o Zodin Flash Tool manualmente")
                 
                 # Reinicia aplicação
                 self._restart_application()
             else:
+                if QT_AVAILABLE:
+                    QMessageBox.critical(
+                        self.parent,
+                        "Erro na Instalação",
+                        f"Falha ao instalar atualização:\n{message}"
+                    )
+                else:
+                    print(f"❌ Falha ao instalar atualização: {message}")
+        
+        except Exception as e:
+            if QT_AVAILABLE:
                 QMessageBox.critical(
                     self.parent,
                     "Erro na Instalação",
-                    f"Falha ao instalar atualização:\n{message}"
+                    f"Erro inesperado durante instalação:\n{str(e)}"
                 )
-        
-        except Exception as e:
-            QMessageBox.critical(
-                self.parent,
-                "Erro na Instalação",
-                f"Erro inesperado durante instalação:\n{str(e)}"
-            )
+            else:
+                print(f"❌ Erro inesperado durante instalação: {str(e)}")
         
         finally:
             # Remove arquivo temporário
