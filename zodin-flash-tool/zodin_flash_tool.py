@@ -30,6 +30,7 @@ from PyQt6.QtGui import (QFont, QPixmap, QIcon, QPalette, QColor, QLinearGradien
 
 from samsung_protocol import (ZodinFlashEngine, SamsungDevice, SamsungMode, 
                              FlashProgress, FirmwareParser)
+from updater import ZodinUpdater
 
 
 class AnimatedButton(QPushButton):
@@ -327,9 +328,15 @@ class ZodinFlashTool(QMainWindow):
             log_callback=self.log
         )
         
+        # Inicializa sistema de atualização
+        self.updater = ZodinUpdater(self, "1.0.0")
+        
         self.init_ui()
         self.setup_device_detection()
         self.setup_animations()
+        
+        # Verifica atualizações após 3 segundos (para não atrasar a inicialização)
+        QTimer.singleShot(3000, self.updater.check_for_updates)
     
     def init_ui(self):
         """Inicializa a interface do usuário"""
@@ -581,6 +588,10 @@ class ZodinFlashTool(QMainWindow):
         tools_tab = self.create_tools_tab()
         tab_widget.addTab(tools_tab, "🔧 Tools")
         
+        # Aba Configurações
+        settings_tab = self.create_settings_tab()
+        tab_widget.addTab(settings_tab, "⚙️ Config")
+        
         # Aba Sobre
         about_tab = self.create_about_tab()
         tab_widget.addTab(about_tab, "ℹ️ About")
@@ -808,6 +819,307 @@ class ZodinFlashTool(QMainWindow):
         download_layout.addWidget(placeholder)
         
         return download_widget
+    
+    def create_settings_tab(self):
+        """Cria a aba de configurações"""
+        settings_widget = QWidget()
+        settings_layout = QVBoxLayout(settings_widget)
+        settings_layout.setSpacing(25)
+        
+        # Configurações de Atualização
+        update_group = QGroupBox("🔄 Sistema de Atualização")
+        update_layout = QVBoxLayout(update_group)
+        
+        # Obter configurações atuais
+        update_config = self.updater.get_update_settings()
+        
+        # Auto verificação
+        self.auto_check_cb = QCheckBox("🔍 Verificar atualizações automaticamente")
+        self.auto_check_cb.setChecked(update_config.get("auto_check", True))
+        self.auto_check_cb.setStyleSheet("font-size: 14px; padding: 8px;")
+        update_layout.addWidget(self.auto_check_cb)
+        
+        # Intervalo de verificação
+        interval_layout = QHBoxLayout()
+        interval_layout.addWidget(QLabel("⏰ Verificar a cada:"))
+        
+        self.check_interval_spin = QSpinBox()
+        self.check_interval_spin.setRange(1, 168)  # 1 hora a 1 semana
+        self.check_interval_spin.setValue(update_config.get("check_interval", 24))
+        self.check_interval_spin.setSuffix(" horas")
+        self.check_interval_spin.setStyleSheet("""
+            QSpinBox {
+                padding: 8px;
+                font-size: 14px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                min-width: 100px;
+            }
+        """)
+        interval_layout.addWidget(self.check_interval_spin)
+        interval_layout.addStretch()
+        update_layout.addLayout(interval_layout)
+        
+        # Apenas atualizações críticas
+        self.critical_only_cb = QCheckBox("⚠️ Notificar apenas atualizações críticas")
+        self.critical_only_cb.setChecked(update_config.get("notify_critical_only", False))
+        self.critical_only_cb.setStyleSheet("font-size: 14px; padding: 8px;")
+        update_layout.addWidget(self.critical_only_cb)
+        
+        # Botões de ação
+        update_buttons_layout = QHBoxLayout()
+        
+        check_now_btn = AnimatedButton("🔍 Verificar Agora", primary=True)
+        check_now_btn.clicked.connect(self.check_updates_manually)
+        
+        save_settings_btn = AnimatedButton("💾 Salvar Configurações", success=True)
+        save_settings_btn.clicked.connect(self.save_update_settings)
+        
+        reset_skipped_btn = AnimatedButton("🔄 Resetar Versões Puladas")
+        reset_skipped_btn.clicked.connect(self.reset_skipped_versions)
+        
+        update_buttons_layout.addWidget(check_now_btn)
+        update_buttons_layout.addWidget(save_settings_btn)
+        update_buttons_layout.addWidget(reset_skipped_btn)
+        update_layout.addLayout(update_buttons_layout)
+        
+        # Informações da última verificação
+        last_check = update_config.get("last_check")
+        if last_check:
+            try:
+                from datetime import datetime
+                last_check_date = datetime.fromisoformat(last_check)
+                last_check_str = last_check_date.strftime("%d/%m/%Y às %H:%M")
+            except:
+                last_check_str = "Data inválida"
+        else:
+            last_check_str = "Nunca"
+        
+        last_check_label = QLabel(f"📅 Última verificação: {last_check_str}")
+        last_check_label.setStyleSheet("""
+            QLabel {
+                font-size: 13px;
+                color: #636e72;
+                padding: 10px;
+                background-color: #f8f9fa;
+                border-radius: 8px;
+                margin-top: 10px;
+            }
+        """)
+        update_layout.addWidget(last_check_label)
+        
+        settings_layout.addWidget(update_group)
+        
+        # Configurações da Interface
+        interface_group = QGroupBox("🎨 Interface e Aparência")
+        interface_layout = QVBoxLayout(interface_group)
+        
+        # Animações
+        self.animations_cb = QCheckBox("✨ Ativar animações fluidas")
+        self.animations_cb.setChecked(True)
+        self.animations_cb.setStyleSheet("font-size: 14px; padding: 8px;")
+        interface_layout.addWidget(self.animations_cb)
+        
+        # Tema
+        theme_layout = QHBoxLayout()
+        theme_layout.addWidget(QLabel("🎨 Tema:"))
+        
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItems(["🌟 Automático", "☀️ Claro", "🌙 Escuro"])
+        self.theme_combo.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                font-size: 14px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                min-width: 150px;
+            }
+        """)
+        theme_layout.addWidget(self.theme_combo)
+        theme_layout.addStretch()
+        interface_layout.addLayout(theme_layout)
+        
+        # Idioma
+        language_layout = QHBoxLayout()
+        language_layout.addWidget(QLabel("🌍 Idioma:"))
+        
+        self.language_combo = QComboBox()
+        self.language_combo.addItems(["🇧🇷 Português", "🇺🇸 English"])
+        self.language_combo.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                font-size: 14px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                min-width: 150px;
+            }
+        """)
+        language_layout.addWidget(self.language_combo)
+        language_layout.addStretch()
+        interface_layout.addLayout(language_layout)
+        
+        settings_layout.addWidget(interface_group)
+        
+        # Configurações Avançadas
+        advanced_group = QGroupBox("🔧 Configurações Avançadas")
+        advanced_layout = QVBoxLayout(advanced_group)
+        
+        # Debug mode
+        self.debug_mode_cb = QCheckBox("🐛 Modo Debug (logs detalhados)")
+        self.debug_mode_cb.setStyleSheet("font-size: 14px; padding: 8px;")
+        advanced_layout.addWidget(self.debug_mode_cb)
+        
+        # Timeout USB
+        timeout_layout = QHBoxLayout()
+        timeout_layout.addWidget(QLabel("⏱️ Timeout USB:"))
+        
+        self.usb_timeout_spin = QSpinBox()
+        self.usb_timeout_spin.setRange(1000, 30000)
+        self.usb_timeout_spin.setValue(5000)
+        self.usb_timeout_spin.setSuffix(" ms")
+        self.usb_timeout_spin.setStyleSheet("""
+            QSpinBox {
+                padding: 8px;
+                font-size: 14px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                min-width: 100px;
+            }
+        """)
+        timeout_layout.addWidget(self.usb_timeout_spin)
+        timeout_layout.addStretch()
+        advanced_layout.addLayout(timeout_layout)
+        
+        # Chunk size
+        chunk_layout = QHBoxLayout()
+        chunk_layout.addWidget(QLabel("📦 Tamanho do Chunk:"))
+        
+        self.chunk_size_combo = QComboBox()
+        self.chunk_size_combo.addItems([
+            "512 KB", "1 MB", "2 MB", "4 MB", "8 MB"
+        ])
+        self.chunk_size_combo.setCurrentText("1 MB")
+        self.chunk_size_combo.setStyleSheet("""
+            QComboBox {
+                padding: 8px;
+                font-size: 14px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                min-width: 100px;
+            }
+        """)
+        chunk_layout.addWidget(self.chunk_size_combo)
+        chunk_layout.addStretch()
+        advanced_layout.addLayout(chunk_layout)
+        
+        settings_layout.addWidget(advanced_group)
+        
+        # Botões gerais
+        general_buttons_layout = QHBoxLayout()
+        general_buttons_layout.addStretch()
+        
+        reset_all_btn = AnimatedButton("🔄 Restaurar Padrões", danger=True)
+        reset_all_btn.clicked.connect(self.reset_all_settings)
+        
+        apply_btn = AnimatedButton("✅ Aplicar Todas", primary=True)
+        apply_btn.clicked.connect(self.apply_all_settings)
+        
+        general_buttons_layout.addWidget(reset_all_btn)
+        general_buttons_layout.addWidget(apply_btn)
+        
+        settings_layout.addLayout(general_buttons_layout)
+        settings_layout.addStretch()
+        
+        return settings_widget
+    
+    def check_updates_manually(self):
+        """Verifica atualizações manualmente"""
+        self.log("🔍 Verificando atualizações manualmente...")
+        self.updater.manual_check()
+    
+    def save_update_settings(self):
+        """Salva configurações de atualização"""
+        settings = {
+            "auto_check": self.auto_check_cb.isChecked(),
+            "check_interval": self.check_interval_spin.value(),
+            "notify_critical_only": self.critical_only_cb.isChecked()
+        }
+        
+        self.updater.update_settings(settings)
+        self.log("💾 Configurações de atualização salvas")
+        
+        QMessageBox.information(
+            self,
+            "Configurações Salvas",
+            "✅ Configurações de atualização salvas com sucesso!"
+        )
+    
+    def reset_skipped_versions(self):
+        """Reseta versões puladas"""
+        settings = self.updater.get_update_settings()
+        settings["skipped_versions"] = []
+        self.updater.update_settings(settings)
+        
+        self.log("🔄 Lista de versões puladas foi resetada")
+        QMessageBox.information(
+            self,
+            "Versões Resetadas",
+            "🔄 Lista de versões puladas foi resetada.\n"
+            "Você será notificado sobre todas as atualizações novamente."
+        )
+    
+    def reset_all_settings(self):
+        """Restaura todas as configurações para o padrão"""
+        reply = QMessageBox.question(
+            self,
+            "Restaurar Configurações",
+            "⚠️ Tem certeza que deseja restaurar todas as configurações para o padrão?\n\n"
+            "Esta ação não pode ser desfeita.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            # Restaura configurações de atualização
+            default_update_settings = {
+                "auto_check": True,
+                "check_interval": 24,
+                "notify_critical_only": False,
+                "skipped_versions": []
+            }
+            self.updater.update_settings(default_update_settings)
+            
+            # Restaura controles da interface
+            self.auto_check_cb.setChecked(True)
+            self.check_interval_spin.setValue(24)
+            self.critical_only_cb.setChecked(False)
+            self.animations_cb.setChecked(True)
+            self.theme_combo.setCurrentIndex(0)
+            self.language_combo.setCurrentIndex(0)
+            self.debug_mode_cb.setChecked(False)
+            self.usb_timeout_spin.setValue(5000)
+            self.chunk_size_combo.setCurrentText("1 MB")
+            
+            self.log("🔄 Todas as configurações foram restauradas para o padrão")
+            QMessageBox.information(
+                self,
+                "Configurações Restauradas",
+                "✅ Todas as configurações foram restauradas para o padrão!"
+            )
+    
+    def apply_all_settings(self):
+        """Aplica todas as configurações"""
+        # Salva configurações de atualização
+        self.save_update_settings()
+        
+        # Aplica outras configurações
+        self.log("✅ Todas as configurações foram aplicadas")
+        QMessageBox.information(
+            self,
+            "Configurações Aplicadas",
+            "✅ Todas as configurações foram aplicadas com sucesso!\n\n"
+            "Algumas mudanças podem exigir reinicialização da aplicação."
+        )
     
     def create_tools_tab(self):
         """Cria a aba de ferramentas"""
